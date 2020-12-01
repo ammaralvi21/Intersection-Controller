@@ -1,2 +1,2 @@
 # Intersection-Traffic-Controller
-sdf
+Implementing intersection traffic control in FreeRTOS using STM32 Microcontroller.
