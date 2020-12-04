@@ -20,65 +20,7 @@ void Cli_init(UART_HandleTypeDef * huart)
 }
 
 //Interprets and Executes the command line buffer
-void Execute_Cmd(UART_HandleTypeDef * huart, uint16_t * cliMessage)
-{
 
-	  printStringBlock(huart, NEW_LINE_STR);
-	  char * period_substr = NULL;
-	  period_substr = strstr(rxLineBuffer, CMD_LED_PERIOD_STR);
-	  // The following if statements use strcmp to compare rxLineBuffer string with
-	  // ..a specific command string. If equal execute that command.
-	  if (strcmp(rxLineBuffer, CMD_LED_ON_STR) == 0)
-	  {
-		  printStringBlock(huart, MSG_LED_ON_STR);
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-	  }
-	  else if (strcmp(rxLineBuffer, CMD_LED_OFF_STR) == 0)
-	  {
-		  printStringBlock(huart, MSG_LED_OFF_STR);
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-
-	  }
-	  else if (strcmp(rxLineBuffer, CMD_LED_STATE_STR) == 0)
-	  {
-		  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5))
-		  {
-			  printStringBlock(huart, MSG_LED_STATE_ON_STR);
-		  }
-		  else
-		  {
-			  printStringBlock(huart, MSG_LED_STATE_OFF_STR);
-		  }
-	  }
-	  else if (strcmp(rxLineBuffer, CMD_LED_OFF_STR) == 0)
-	  {
-		  printStringBlock(huart, MSG_LED_OFF_STR);
-		  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-
-	  }
-	  else if (period_substr != NULL)
-	  {
-		  period_substr += strlen(CMD_LED_PERIOD_STR);
-		  *cliMessage = atoi(period_substr);
-		  printStringBlock(huart, MSG_NEW_PERIOD_STR);
-		  printStringBlock(huart, period_substr);
-		  printStringBlock(huart, NEW_LINE_STR);
-		  period_substr = NULL;
-	  }
-	  else if (strcmp(rxLineBuffer, CMD_HELP_STR) == 0)
-	  {
-
-		  printStringBlock(huart, MSG_HELP_STR);
-	  }
-	  else if (buffCount != 0)		//If the rxLineBuffer is empty, don't print help message
-	  {
-		  printStringBlock(huart, MSG_ERROR_STR);
-	  }
-
-	  //Transmit command prompt
-	  printStringBlock(huart, PROMPT_STR);
-
-}
 
 
 //Print input string in blocking mode
@@ -102,6 +44,27 @@ void printStringBlock(UART_HandleTypeDef * huart,const char * message)
 	}
 
 
+}
+
+char *strstrip(char *s)
+{
+    size_t size;
+    char *end;
+
+    size = strlen(s);
+
+    if (!size)
+        return s;
+
+    end = s + size - 1;
+    while (end >= s && isspace(*end))
+        end--;
+    *(end + 1) = '\0';
+
+    while (*s && isspace(*s))
+        s++;
+
+    return s;
 }
 
 
