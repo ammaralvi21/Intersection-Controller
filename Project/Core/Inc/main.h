@@ -34,7 +34,9 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "cli.h"
+#include "lights.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -49,14 +51,15 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
+#define LIGHT_OFF GPIO_PIN_RESET
+#define LIGHT_ON GPIO_PIN_SET
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void Execute_Cmd(UART_HandleTypeDef * huart, uint16_t * cliMessage);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

@@ -338,24 +338,21 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8
-                          |GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PA5 PA6 PA7 PA8
-                           PA9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8
-                          |GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  /*Configure GPIO pins : PA6 PA7 PA8 PA9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB12 PB13 PB14 PB15 */
   GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -363,6 +360,63 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void Execute_Cmd(UART_HandleTypeDef * huart, uint16_t * cliMessage)
+{
+
+	  printStringBlock(huart, NEW_LINE_STR);
+	  char * arg_substr = NULL;
+	  char * rxCommand = strstrip(rxLineBuffer);
+	  // The following if statements use strcmp to compare rxLineBuffer string with
+	  // ..a specific command string. If equal execute that command.
+	  if (strcmp(rxCommand, CMD_FSM_STR) == 0)
+	  {
+ 	    	if(osMessageQueuePut(CLI_QueueHandle, cliMessage, 1U, 0U)!= osOK)
+ 	        {
+ 	          Error_Handler();
+ 	        }
+		  osEventFlagsSet(New_CMD_RxHandle, NEW_CMD_FLAG);
+		  printStringBlock(huart, MSG_FSM_STR);
+	  }
+	  else if (strcmp(rxCommand, CMD_SCM_STR) == 0)
+	  {
+	    	if(osMessageQueuePut(CLI_QueueHandle, cliMessage, 1U, 0U)!= osOK)
+	        {
+	          Error_Handler();
+	        }
+		  osEventFlagsSet(New_CMD_RxHandle, NEW_CMD_FLAG);
+		  printStringBlock(huart, MSG_SCM_STR);
+	  }
+	  else if ( (arg_substr = strstr(rxCommand, CMD_ATM_STR)) != NULL )
+	  {
+		  arg_substr += strlen(CMD_ATM_STR);
+		  *cliMessage = atoi(arg_substr);
+	      if(osMessageQueuePut(CLI_QueueHandle, cliMessage, 1U, 0U)!= osOK)
+	      {
+	          Error_Handler();
+	      }
+		  osEventFlagsSet(New_CMD_RxHandle, NEW_CMD_FLAG);
+		  printStringBlock(huart, MSG_ATM_STR);
+
+		  printStringBlock(huart, arg_substr);
+		  printStringBlock(huart, " !!");
+		  printStringBlock(huart, NEW_LINE_STR);
+		  arg_substr = NULL;
+	  }
+	  else if (strcmp(rxCommand, CMD_HELP_STR) == 0)
+	  {
+		  printStringBlock(huart, MSG_HELP_STR);
+	  }
+	  else if ((buffCount != 0) && (*rxCommand != '\0'))		//If the rxLineBuffer is empty, don't print help message
+	  {
+		  printStringBlock(huart, MSG_CMD_ERR_STR);
+		  printStringBlock(huart, rxCommand);
+		  printStringBlock(huart, MSG_ASK_HELP_STR);
+	  }
+
+	  //Transmit command prompt
+	  printStringBlock(huart, PROMPT_STR);
+
+}
 
 /* USER CODE END 4 */
 
@@ -381,6 +435,15 @@ void Traffic_Lights_Task(void *argument)
 	osStatus_t status;
 	uint16_t period = 1000;
 
+	 Primary_Red(LIGHT_OFF);
+	 Primary_Yellow(LIGHT_OFF);
+	 Primary_Green(LIGHT_OFF);
+	 Primary_Walk(LIGHT_OFF);
+
+	 Secondary_Red(LIGHT_OFF);
+	 Secondary_Yellow(LIGHT_OFF);
+	 Secondary_Green(LIGHT_OFF);
+	 Secondary_Walk(LIGHT_OFF);
 	//Send a status message straight away
 	statusMessage = period;
 	if(osMessageQueuePut(Status_QueueHandle, &statusMessage, 1U, 0U)!= osOK)
@@ -406,8 +469,11 @@ void Traffic_Lights_Task(void *argument)
 
 		}
 
-		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+		Primary_Red(LIGHT_ON);
 		osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) period);
+		Primary_Red(LIGHT_OFF);
+		osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) period);
+
 		//osDelay(period);
 	}
   osThreadTerminate(NULL);
@@ -435,14 +501,10 @@ void Rx_CLI_Task(void *argument)
 
 			Execute_Cmd(&huart3, &cliMessage);		//Execute the command line
 
-   	    	if(osMessageQueuePut(CLI_QueueHandle, &cliMessage, 1U, 0U)!= osOK)
-   	        {
-   	          Error_Handler();
-   	        }
 			//Reset the command line buffer to null
 			memset(rxLineBuffer, '\0', sizeof(rxLineBuffer));
 			buffCount = 0;
-			osEventFlagsSet(New_CMD_RxHandle, NEW_CMD_FLAG);
+
 
 		}
 		//If Backspace key was pressed..

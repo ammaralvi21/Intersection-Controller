@@ -13,27 +13,26 @@
 
 //All the uint8_t * strings used in CLI
 #define NEW_LINE_STR (" \r\n\r\n")
-#define PROMPT_STR ("UART3-CLI > ")
-#define CMD_LED_ON_STR ("led on")
-#define CMD_LED_OFF_STR ("led off")
-#define CMD_LED_STATE_STR ("led state")
-#define CMD_LED_PERIOD_STR ("led period ")
+#define PROMPT_STR ("ItC-CLI > ")
+#define CMD_FSM_STR ("mode fsm")
+#define CMD_SCM_STR ("mode scm")
+#define CMD_ATM_STR ("atm ")
 #define CMD_HELP_STR ("help")
-#define CMD_TIMING_TEST_STR ("run time test")
-#define MSG_LED_ON_STR ( "Turning ON the LED...\r\n\r\n")
-#define MSG_LED_OFF_STR ("Turning OFF the LED...\r\n\r\n")
-#define MSG_LED_STATE_ON_STR ("!!! The LED state is ON !!!\r\n\r\n")
+#define MSG_FSM_STR ("!! Switched to Failsafe mode !!\r\n\r\n")
+#define MSG_SCM_STR ("!! Switched to Static Cycle mode !!\r\n\r\n")
+#define MSG_ATM_STR ("!! Accelerated test mode with multiplication factor: ")
 #define MSG_LED_STATE_OFF_STR ("!!! The LED state is OFF !!!\r\n\r\n")
-#define MSG_NEW_PERIOD_STR ("!!! The new LED Period is: ")
-
 #define MSG_HELP_STR ( \
 		"HELP MENU:\r\n" \
 		"Commands           |    Description\r\n" \
 		"-------------------|------------------------\r\n" \
-		"''                 |    \r\n" \
+		"'mode fsm'         |    \r\n" \
+		"'mode scm'         |    \r\n" \
+		"'atm [x]'          |    \r\n" \
 		"'help'             |    Show HELP menu\r\n\r\n")
 
-#define MSG_ERROR_STR ("ERROR! Unknown command.\r\nType 'help' for more info\r\n\r\n")
+#define MSG_CMD_ERR_STR ("ERROR! Invalid command: \"")
+#define MSG_ASK_HELP_STR ("\"\r\nType 'help' for more info\r\n\r\n")
 
 //ANSI Escape codes for terminal manipulation
 #define CLEAR_SCREEN "\x1b[2J"
@@ -52,8 +51,7 @@ char s_buff[10];			//String when coverting integer to string...
 							//..to display in terminal window
 
 void Cli_init(UART_HandleTypeDef * huart);
-void Execute_Cmd(UART_HandleTypeDef * huart, uint16_t * cliMessage);
 void printStringBlock(UART_HandleTypeDef * huart, const char * message);
-
+char *strstrip(char *s);
 
 #endif
