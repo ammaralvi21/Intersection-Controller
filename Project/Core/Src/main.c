@@ -41,7 +41,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim1;
 
 UART_HandleTypeDef huart3;
 
@@ -94,8 +94,8 @@ const uint32_t NEW_CMD_FLAG = 0x0002U;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_TIM3_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_TIM1_Init(void);
 void Traffic_Lights_Task(void *argument);
 void Rx_CLI_Task(void *argument);
 void Status_CLI_Task(void *argument);
@@ -137,10 +137,11 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_TIM3_Init();
   MX_USART3_UART_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   Cli_init(&huart3);
+  HAL_TIM_Base_Start(&htim1);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -236,9 +237,9 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV8;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV16;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
@@ -247,47 +248,82 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief TIM3 Initialization Function
+  * @brief TIM1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_TIM3_Init(void)
+static void MX_TIM1_Init(void)
 {
 
-  /* USER CODE BEGIN TIM3_Init 0 */
+  /* USER CODE BEGIN TIM1_Init 0 */
 
-  /* USER CODE END TIM3_Init 0 */
+  /* USER CODE END TIM1_Init 0 */
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
 
-  /* USER CODE BEGIN TIM3_Init 1 */
+  /* USER CODE BEGIN TIM1_Init 1 */
 
-  /* USER CODE END TIM3_Init 1 */
-  htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 0;
-  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 65535;
-  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 10001;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 100;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
   }
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
   {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN TIM3_Init 2 */
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 101;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+ // sConfigOC.Pulse = 50;
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
+  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
+  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
+  sBreakDeadTimeConfig.DeadTime = 0;
+  sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
+  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
+  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
+  if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
 
-  /* USER CODE END TIM3_Init 2 */
+  /* USER CODE END TIM1_Init 2 */
+  HAL_TIM_MspPostInit(&htim1);
 
 }
 
@@ -338,20 +374,20 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PA6 PA7 PA8 PA9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9;
+  /*Configure GPIO pins : PA6 PA7 PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB12 PB13 PB14 PB15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
+  /*Configure GPIO pins : PB12 PB13 PB14 */
+  GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -432,8 +468,9 @@ void Traffic_Lights_Task(void *argument)
   /* USER CODE BEGIN 5 */
 	uint16_t cliMessage;
 	uint16_t statusMessage;
+	uint16_t period = 50;
 	osStatus_t status;
-	uint16_t period = 1000;
+	LightScmState currScmState = Primary_G_WK_State;
 
 	 Primary_Red(LIGHT_OFF);
 	 Primary_Yellow(LIGHT_OFF);
@@ -444,6 +481,12 @@ void Traffic_Lights_Task(void *argument)
 	 Secondary_Yellow(LIGHT_OFF);
 	 Secondary_Green(LIGHT_OFF);
 	 Secondary_Walk(LIGHT_OFF);
+
+	//
+	 HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_2);
+	 HAL_TIMEx_PWMN_Start(&htim1,TIM_CHANNEL_3);
+
+
 	//Send a status message straight away
 	statusMessage = period;
 	if(osMessageQueuePut(Status_QueueHandle, &statusMessage, 1U, 0U)!= osOK)
@@ -469,10 +512,114 @@ void Traffic_Lights_Task(void *argument)
 
 		}
 
-		Primary_Red(LIGHT_ON);
-		osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) period);
-		Primary_Red(LIGHT_OFF);
-		osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) period);
+		switch (currScmState)
+		{
+		case Primary_G_WK_State :
+
+			Primary_Red(LIGHT_OFF);
+			Primary_Yellow(LIGHT_OFF);
+			Primary_Green(LIGHT_ON);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 0);
+
+			Secondary_Red(LIGHT_ON);
+			Secondary_Yellow(LIGHT_OFF);
+			Secondary_Green(LIGHT_OFF);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 150);
+			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (70500/period));
+
+			currScmState = Primary_G_WW_State;
+			break;
+		case Primary_G_WW_State :
+
+			Primary_Red(LIGHT_OFF);
+			Primary_Yellow(LIGHT_OFF);
+			Primary_Green(LIGHT_ON);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 50);
+
+			Secondary_Red(LIGHT_ON);
+			Secondary_Yellow(LIGHT_OFF);
+			Secondary_Green(LIGHT_OFF);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 150);
+			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (14000/period));
+
+			currScmState = Primary_Y_DW_State;
+			break;
+		case Primary_Y_DW_State :
+
+			Primary_Red(LIGHT_OFF);
+			Primary_Yellow(LIGHT_ON);
+			Primary_Green(LIGHT_OFF);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 150);
+
+			Secondary_Red(LIGHT_ON);
+			Secondary_Yellow(LIGHT_OFF);
+			Secondary_Green(LIGHT_OFF);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 150);
+			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (3500/period));
+
+			currScmState = Primary_R_DW_Sate;
+			break;
+		case Primary_R_DW_Sate :
+
+			Primary_Red(LIGHT_ON);
+			Primary_Yellow(LIGHT_OFF);
+			Primary_Green(LIGHT_OFF);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 150);
+
+			Secondary_Red(LIGHT_ON);
+			Secondary_Yellow(LIGHT_OFF);
+			Secondary_Green(LIGHT_OFF);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 150);
+			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (5000/period));
+
+			currScmState = Secondary_G_WK_Sate;
+			break;
+		case Secondary_G_WK_Sate :
+
+			Primary_Red(LIGHT_ON);
+			Primary_Yellow(LIGHT_OFF);
+			Primary_Green(LIGHT_OFF);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 150);
+
+			Secondary_Red(LIGHT_OFF);
+			Secondary_Yellow(LIGHT_OFF);
+			Secondary_Green(LIGHT_ON);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 0);
+			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (20000/period));
+
+			currScmState = Secondary_G_WW_Sate;
+			break;
+		case Secondary_G_WW_Sate :
+
+			Primary_Red(LIGHT_ON);
+			Primary_Yellow(LIGHT_OFF);
+			Primary_Green(LIGHT_OFF);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 150);
+
+			Secondary_Red(LIGHT_OFF);
+			Secondary_Yellow(LIGHT_OFF);
+			Secondary_Green(LIGHT_ON);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 50);
+			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (8000/period));
+
+			currScmState = Secondary_Y_WW_Sate;
+			break;
+		case Secondary_Y_WW_Sate :
+
+			Primary_Red(LIGHT_ON);
+			Primary_Yellow(LIGHT_OFF);
+			Primary_Green(LIGHT_OFF);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 150);
+
+			Secondary_Red(LIGHT_OFF);
+			Secondary_Yellow(LIGHT_ON);
+			Secondary_Green(LIGHT_OFF);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 50);
+			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (3500/period));
+			currScmState = Primary_G_WK_State;
+			break;
+		}
+
 
 		//osDelay(period);
 	}
