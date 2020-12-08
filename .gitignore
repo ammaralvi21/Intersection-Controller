@@ -18,3 +18,4 @@ Project/Debug/Middlewares/Third_Party/FreeRTOS/Source/subdir.mk
 Project/Debug/objects.list
 Project/Debug/objects.mk
 Project/Debug/sources.mk
+Project/.settings/language.settings.xml
