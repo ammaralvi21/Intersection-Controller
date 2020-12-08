@@ -7,6 +7,109 @@
 
 #include "main.h"
 
+extern TIM_HandleTypeDef htim1;
+
+void Primary_G_WK_EventHandler(void)
+{
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 10001);
+	Primary_Red(LIGHT_OFF);
+	Primary_Yellow(LIGHT_OFF);
+	Primary_Green(LIGHT_ON);
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 0);
+
+	Secondary_Red(LIGHT_ON);
+	Secondary_Yellow(LIGHT_OFF);
+	Secondary_Green(LIGHT_OFF);
+
+}
+void Primary_G_WW_EventHandler(void)
+{
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 10001);
+	Primary_Red(LIGHT_OFF);
+	Primary_Yellow(LIGHT_OFF);
+	Primary_Green(LIGHT_ON);
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 5000);
+
+	Secondary_Red(LIGHT_ON);
+	Secondary_Yellow(LIGHT_OFF);
+	Secondary_Green(LIGHT_OFF);
+
+}
+
+void Primary_Y_DW_EventHandler(void)
+{
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 10001);
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 10001);
+
+	Primary_Red(LIGHT_OFF);
+	Primary_Yellow(LIGHT_ON);
+	Primary_Green(LIGHT_OFF);
+
+	Secondary_Red(LIGHT_ON);
+	Secondary_Yellow(LIGHT_OFF);
+	Secondary_Green(LIGHT_OFF);
+
+}
+
+void Primary_R_DW_EventHandler(void)
+{
+	Primary_Red(LIGHT_ON);
+	Primary_Yellow(LIGHT_OFF);
+	Primary_Green(LIGHT_OFF);
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 10001);
+
+	Secondary_Red(LIGHT_ON);
+	Secondary_Yellow(LIGHT_OFF);
+	Secondary_Green(LIGHT_OFF);
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 10001);
+
+}
+
+void Secondary_G_WK_EventHandler(void)
+{
+	Primary_Red(LIGHT_ON);
+	Primary_Yellow(LIGHT_OFF);
+	Primary_Green(LIGHT_OFF);
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 10001);
+
+	Secondary_Red(LIGHT_OFF);
+	Secondary_Yellow(LIGHT_OFF);
+	Secondary_Green(LIGHT_ON);
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 0);
+
+
+}
+
+void Secondary_G_WW_EventHandler(void)
+{
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 10001);
+
+	Primary_Red(LIGHT_ON);
+	Primary_Yellow(LIGHT_OFF);
+	Primary_Green(LIGHT_OFF);
+
+
+	Secondary_Red(LIGHT_OFF);
+	Secondary_Yellow(LIGHT_OFF);
+	Secondary_Green(LIGHT_ON);
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 5000);
+
+}
+
+void Secondary_Y_WW_EventHandler(void)
+{
+	Primary_Red(LIGHT_ON);
+	Primary_Yellow(LIGHT_OFF);
+	Primary_Green(LIGHT_OFF);
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 10001);
+
+	Secondary_Red(LIGHT_OFF);
+	Secondary_Yellow(LIGHT_ON);
+	Secondary_Green(LIGHT_OFF);
+	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 5000);
+
+}
+
 
 void Primary_Red(GPIO_PinState state)
 {
