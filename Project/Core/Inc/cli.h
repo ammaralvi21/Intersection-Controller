@@ -49,10 +49,21 @@
 #define CLEAR_SCREEN "\x1b[2J"
 #define SET_CURSOR(X,Y) "\x1b["#X";" #Y "H"
 #define SAVE_CURSOR "\x1b[s"
-#define RESTORE_CURSOR "\x1b[u"
+#define RESTORE_CURSOR "\x1b[0m\x1b[u"
 #define SET_REGION(X) "\x1b["#X";r"
 #define CLEAR_STATUS(X) "\x1b["#X";0H\x1b[0K\x1b[1J"
 
+
+#define BG_RED "\x1b[48;2;255;0;0m R "
+#define BG_GREEN "\x1b[48;2;0;255;0m G "
+#define BG_YELLOW "\x1b[48;2;255;255;0m Y "
+#define BG_BLUE_W "\x1b[48;2;0;0;255m S "
+#define BG_BLUE "\x1b[48;2;0;0;255m W "
+
+#define BG_NRED "\x1b[48;2;59;0;0m   "
+#define BG_NGREEN "\x1b[48;2;0;59;0m   "
+#define BG_NYELLOW "\x1b[48;2;48;48;0m   "
+#define BG_NBLUE "\x1b[48;2;0;0;48m\x1b[39m\x1b[1m   "
 
 
 char rxBuffer;				//One byte recieve buffer
@@ -60,6 +71,14 @@ char rxLineBuffer[MAX_RX];	//Buffer to store entire command line
 volatile uint8_t buffCount;		//Counter for rxLineBuffer
 char s_buff[10];			//String when coverting integer to string...
 							//..to display in terminal window
+void Primary_G_WK_StatusUpdate(void);
+void Primary_G_WW_StatusUpdate(void);
+void Primary_Y_DW_StatusUpdate(void);
+void Primary_R_DW_StatusUpdate(void);
+void Secondary_G_WK_StatusUpdate(void);
+void Secondary_G_WW_StatusUpdate(void);
+void Secondary_Y_WW_StatusUpdate(void);
+void Fail_Safe_StatusUpdate();
 
 void Cli_init(UART_HandleTypeDef * huart);
 void printStringBlock(UART_HandleTypeDef * huart, const char * message);

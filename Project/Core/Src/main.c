@@ -164,7 +164,7 @@ int main(void)
   CLI_QueueHandle = osMessageQueueNew (16, sizeof(CMD_MSG_QUEUE_t), &CLI_Queue_attributes);
 
   /* creation of Status_Queue */
-  Status_QueueHandle = osMessageQueueNew (16, sizeof(Status_MSG_QUEUE_t), &Status_Queue_attributes);
+  Status_QueueHandle = osMessageQueueNew (2, sizeof(Status_MSG_QUEUE_t), &Status_Queue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -406,11 +406,11 @@ void Execute_Cmd(UART_HandleTypeDef * huart, CMD_MSG_QUEUE_t * cliMessage)
 	  // ..a specific command string. If equal execute that command.
 	  if (strcmp(rxCommand, CMD_FSM_STR) == 0)
 	  {
-		  cliMessage->code = CMD_FSM_CODE;
- 	    	if(osMessageQueuePut(CLI_QueueHandle, cliMessage, 1U, 0U)!= osOK)
- 	        {
- 	          Error_Handler();
- 	        }
+		    cliMessage->code = CMD_FSM_CODE;
+			if(osMessageQueuePut(CLI_QueueHandle, cliMessage, 1U, 0U)!= osOK)
+			{
+			  Error_Handler();
+			}
 		  osEventFlagsSet(New_CMD_RxHandle, NEW_CMD_FLAG);
 		  printStringBlock(huart, MSG_FSM_STR);
 	  }
@@ -424,7 +424,7 @@ void Execute_Cmd(UART_HandleTypeDef * huart, CMD_MSG_QUEUE_t * cliMessage)
 		  osEventFlagsSet(New_CMD_RxHandle, NEW_CMD_FLAG);
 		  printStringBlock(huart, MSG_SCM_STR);
 	  }
-	  else if ( (arg_substr = strstr(rxCommand, CMD_ATM_STR)) != NULL )
+	  else if ((arg_substr = strstr(rxCommand, CMD_ATM_STR)) != NULL )
 	  {
 
 		  arg_substr += strlen(CMD_ATM_STR);
@@ -479,12 +479,12 @@ void Execute_Cmd(UART_HandleTypeDef * huart, CMD_MSG_QUEUE_t * cliMessage)
 void Traffic_Lights_Task(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	CMD_MSG_QUEUE_t cliMessage;
-	Status_MSG_QUEUE_t statusMessage;
-	uint16_t atmMultiplier = 1;
+	 CMD_MSG_QUEUE_t cliMessage;
+	 Status_MSG_QUEUE_t statusMessage;
+	volatile uint16_t atmMultiplier = 1;
 	osStatus_t status;
-	osStatus_t temp;
-	LightScmState currScmState = Primary_G_WK_State;
+	//osStatus_t temp;
+	volatile LightScmState currScmState = Primary_G_WK_State;
 
 	 Primary_Red(LIGHT_OFF);
 	 Primary_Yellow(LIGHT_OFF);
@@ -502,7 +502,7 @@ void Traffic_Lights_Task(void *argument)
 
 
 	//Send a status message straight away
-	statusMessage.code = 'f';
+	statusMessage.code = CMD_SCM_CODE;
 	statusMessage.multiplier = 1;
 	statusMessage.LightState = currScmState;
 	if(osMessageQueuePut(Status_QueueHandle, &statusMessage, 1U, 0U)!= osOK)
@@ -517,6 +517,7 @@ void Traffic_Lights_Task(void *argument)
 		status = osMessageQueueGet(CLI_QueueHandle, &cliMessage, NULL, 0U );
 		if(status == osOK)
 		{
+			osEventFlagsClear(New_CMD_RxHandle,NEW_CMD_FLAG);
 			//This means a message has been received
 			if(cliMessage.code == CMD_FSM_CODE)
 			{
@@ -532,6 +533,7 @@ void Traffic_Lights_Task(void *argument)
 			}
 			else if(cliMessage.code == CMD_ATM_CODE)
 			{
+				currScmState = Primary_G_WK_State;
 				atmMultiplier = cliMessage.multiplier;
 
 			}
@@ -544,13 +546,11 @@ void Traffic_Lights_Task(void *argument)
 			statusMessage.code = cliMessage.code;
 			statusMessage.multiplier = atmMultiplier;
 
-
-
 		}
 
 		statusMessage.LightState = currScmState;
 
-		if (osMessageQueueGetCount(Status_QueueHandle) < 16)
+		if (osMessageQueueGetCount(Status_QueueHandle) < 2)
 		{
 			if(osMessageQueuePut(Status_QueueHandle, &statusMessage, 1U, 0U) != osOK)
 			{
@@ -562,105 +562,61 @@ void Traffic_Lights_Task(void *argument)
 		{
 		case Primary_G_WK_State :
 
-			Primary_Red(LIGHT_OFF);
-			Primary_Yellow(LIGHT_OFF);
-			Primary_Green(LIGHT_ON);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 0);
+			 Primary_G_WK_EventHandler();
 
-			Secondary_Red(LIGHT_ON);
-			Secondary_Yellow(LIGHT_OFF);
-			Secondary_Green(LIGHT_OFF);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 10001);
 			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (70500/atmMultiplier));
-
 			currScmState = Primary_G_WW_State;
+
 			break;
+
 		case Primary_G_WW_State :
 
-			Primary_Red(LIGHT_OFF);
-			Primary_Yellow(LIGHT_OFF);
-			Primary_Green(LIGHT_ON);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 5000);
+			Primary_G_WW_EventHandler();
 
-			Secondary_Red(LIGHT_ON);
-			Secondary_Yellow(LIGHT_OFF);
-			Secondary_Green(LIGHT_OFF);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 10001);
 			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (14000/atmMultiplier));
-
 			currScmState = Primary_Y_DW_State;
 			break;
+
 		case Primary_Y_DW_State :
 
-			Primary_Red(LIGHT_OFF);
-			Primary_Yellow(LIGHT_ON);
-			Primary_Green(LIGHT_OFF);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 10001);
+			Primary_Y_DW_EventHandler();
 
-			Secondary_Red(LIGHT_ON);
-			Secondary_Yellow(LIGHT_OFF);
-			Secondary_Green(LIGHT_OFF);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 10001);
 			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (3500/atmMultiplier));
 
-			currScmState = Primary_R_DW_Sate;
+			currScmState = Primary_R_DW_State;
 			break;
-		case Primary_R_DW_Sate :
 
-			Primary_Red(LIGHT_ON);
-			Primary_Yellow(LIGHT_OFF);
-			Primary_Green(LIGHT_OFF);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 10001);
+		case Primary_R_DW_State :
 
-			Secondary_Red(LIGHT_ON);
-			Secondary_Yellow(LIGHT_OFF);
-			Secondary_Green(LIGHT_OFF);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 10001);
+			Primary_R_DW_EventHandler();
+
 			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (6000/atmMultiplier));
 
-			currScmState = Secondary_G_WK_Sate;
+			currScmState = Secondary_G_WK_State;
 			break;
-		case Secondary_G_WK_Sate :
 
-			Primary_Red(LIGHT_ON);
-			Primary_Yellow(LIGHT_OFF);
-			Primary_Green(LIGHT_OFF);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 10001);
+		case Secondary_G_WK_State :
 
-			Secondary_Red(LIGHT_OFF);
-			Secondary_Yellow(LIGHT_OFF);
-			Secondary_Green(LIGHT_ON);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 0);
+			Secondary_G_WK_EventHandler();
+
 			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (20000/atmMultiplier));
 
-			currScmState = Secondary_G_WW_Sate;
+			currScmState = Secondary_G_WW_State;
 			break;
-		case Secondary_G_WW_Sate :
 
-			Primary_Red(LIGHT_ON);
-			Primary_Yellow(LIGHT_OFF);
-			Primary_Green(LIGHT_OFF);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 10001);
+		case Secondary_G_WW_State :
 
-			Secondary_Red(LIGHT_OFF);
-			Secondary_Yellow(LIGHT_OFF);
-			Secondary_Green(LIGHT_ON);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 5000);
+			Secondary_G_WW_EventHandler();
+
 			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (8000/atmMultiplier));
 
-			currScmState = Secondary_Y_WW_Sate;
+			currScmState = Secondary_Y_WW_State;
 			break;
-		case Secondary_Y_WW_Sate :
 
-			Primary_Red(LIGHT_ON);
-			Primary_Yellow(LIGHT_OFF);
-			Primary_Green(LIGHT_OFF);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 10001);
+		case Secondary_Y_WW_State :
 
-			Secondary_Red(LIGHT_OFF);
-			Secondary_Yellow(LIGHT_ON);
-			Secondary_Green(LIGHT_OFF);
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 5000);
+			Secondary_Y_WW_EventHandler();
+
 			osEventFlagsWait(New_CMD_RxHandle, NEW_CMD_FLAG ,osFlagsWaitAny, (uint32_t) (3500/atmMultiplier));
 			currScmState = Primary_G_WK_State;
 			break;
@@ -757,11 +713,13 @@ void Status_CLI_Task(void *argument)
 	Status_MSG_QUEUE_t statusMessage;
 	Status_MSG_QUEUE_t displayMSG;
 	osStatus_t status;
-	char * Init_Region = SAVE_CURSOR CLEAR_STATUS(9) SET_REGION(10) SET_CURSOR(0,0);
+	char * Init_Region = SAVE_CURSOR CLEAR_STATUS(10) SET_REGION(11) SET_CURSOR(0,0);
 	char atmMultiplier[10];
 	memset(atmMultiplier, '\0', sizeof(atmMultiplier));
 
 	/* Infinite loop */
+
+
 	for(;;)
 	{
 		 status = osMessageQueueGet(Status_QueueHandle, &statusMessage, NULL, 0U );
@@ -771,12 +729,66 @@ void Status_CLI_Task(void *argument)
 		 }
 		itoa(displayMSG.multiplier, atmMultiplier, 10);
 		printStringBlock(&huart3, Init_Region);
-		printStringBlock(&huart3, atmMultiplier);
+
+		switch (displayMSG.code)
+		{
+		case CMD_ATM_CODE :
+			printStringBlock(&huart3, SET_CURSOR(6,2) "ACCELERATED TEST MODE " SET_CURSOR(7,12) "x");
+			printStringBlock(&huart3, atmMultiplier);
+			break;
+
+		case CMD_FSM_CODE :
+			printStringBlock(&huart3, SET_CURSOR(6,2) "FAIL SAFE MODE");
+
+			break;
+
+		case CMD_SCM_CODE :
+			printStringBlock(&huart3, SET_CURSOR(6,2) "STATIC CYCLE MODE");
+			break;
+
+		}
+
+		switch (displayMSG.LightState)
+		{
+			case Primary_G_WK_State:
+				Primary_G_WK_StatusUpdate();
+			break;
+
+			case Primary_G_WW_State:
+				Primary_G_WW_StatusUpdate();
+			break;
+
+			case Primary_Y_DW_State:
+				Primary_Y_DW_StatusUpdate();
+			break;
+
+			case Primary_R_DW_State:
+				Primary_R_DW_StatusUpdate();
+			break;
+
+			case Secondary_G_WK_State:
+				Secondary_G_WK_StatusUpdate();
+			break;
+
+			case Secondary_G_WW_State:
+				Secondary_G_WW_StatusUpdate();
+			break;
+
+			case Secondary_Y_WW_State:
+				Secondary_Y_WW_StatusUpdate();
+			break;
+
+			case Fail_Safe:
+				Fail_Safe_StatusUpdate();
+			break;
+
+		}
+
 		printStringBlock(&huart3, RESTORE_CURSOR);
 		memset(atmMultiplier, '\0', sizeof(atmMultiplier));
 
 		osEventFlagsSet(CLI_Status_UpdateHandle, CLI_STATUS_FLAG);
-		//osDelay(1000);
+
 	}
   /* USER CODE END Status_CLI_Task */
 }
