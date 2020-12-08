@@ -404,7 +404,7 @@ void Execute_Cmd(UART_HandleTypeDef * huart, CMD_MSG_QUEUE_t * cliMessage)
 	  char * rxCommand = strstrip(rxLineBuffer);
 	  // The following if statements use strcmp to compare rxLineBuffer string with
 	  // ..a specific command string. If equal execute that command.
-	  if (strcmp(rxCommand, CMD_FSM_STR) == 0)
+	  if (strcmp(rxCommand, CMD_FSM_STR) == 0)	//If mode fsm is recieved
 	  {
 		    cliMessage->code = CMD_FSM_CODE;
 			if(osMessageQueuePut(CLI_QueueHandle, cliMessage, 1U, 0U)!= osOK)
@@ -414,7 +414,7 @@ void Execute_Cmd(UART_HandleTypeDef * huart, CMD_MSG_QUEUE_t * cliMessage)
 		  osEventFlagsSet(New_CMD_RxHandle, NEW_CMD_FLAG);
 		  printStringBlock(huart, MSG_FSM_STR);
 	  }
-	  else if (strcmp(rxCommand, CMD_SCM_STR) == 0)
+	  else if (strcmp(rxCommand, CMD_SCM_STR) == 0)	//If mode scm is recived
 	  {
 		  cliMessage->code = CMD_SCM_CODE;
 	    	if(osMessageQueuePut(CLI_QueueHandle, cliMessage, 1U, 0U)!= osOK)
@@ -424,20 +424,21 @@ void Execute_Cmd(UART_HandleTypeDef * huart, CMD_MSG_QUEUE_t * cliMessage)
 		  osEventFlagsSet(New_CMD_RxHandle, NEW_CMD_FLAG);
 		  printStringBlock(huart, MSG_SCM_STR);
 	  }
-	  else if ((arg_substr = strstr(rxCommand, CMD_ATM_STR)) != NULL )
+	  else if ((arg_substr = strstr(rxCommand, CMD_ATM_STR)) != NULL )	//If atm [x] is recived
 	  {
 
-		  arg_substr += strlen(CMD_ATM_STR);
-		  uint8_t arg_int = atoi(arg_substr);
-		  if((arg_int >= 1) && (arg_int <= 100))
+		  arg_substr += strlen(CMD_ATM_STR);	//extract the argument from the command
+		  uint8_t arg_int = atoi(arg_substr);	//convert argument into integer form
+		  if((arg_int >= 1) && (arg_int <= 100))	//ensure argument is between 1 and 100.
 		  {
-			  cliMessage->code = CMD_ATM_CODE;
+			  cliMessage->code = CMD_ATM_CODE;		//Form the message to send to the CLI_queueHandle
 			  cliMessage->multiplier = arg_int;
 			  if(osMessageQueuePut(CLI_QueueHandle, cliMessage, 1U, 0U)!= osOK)
 			  {
 				  Error_Handler();
 			  }
-			  osEventFlagsSet(New_CMD_RxHandle, NEW_CMD_FLAG);
+			  osEventFlagsSet(New_CMD_RxHandle, NEW_CMD_FLAG);	  //Set the event flag, so the execution context
+			  	  	  	  	  	  	  	  	  	  	  	  	  	  // returns immediately to the high priority task
 			  printStringBlock(huart, MSG_ATM_STR);
 
 			  printStringBlock(huart, arg_substr);
@@ -451,7 +452,7 @@ void Execute_Cmd(UART_HandleTypeDef * huart, CMD_MSG_QUEUE_t * cliMessage)
 
 		  }
 	  }
-	  else if (strcmp(rxCommand, CMD_HELP_STR) == 0)
+	  else if (strcmp(rxCommand, CMD_HELP_STR) == 0)		//If help command is entered
 	  {
 		  printStringBlock(huart, MSG_HELP_STR);
 	  }
@@ -484,25 +485,27 @@ void Traffic_Lights_Task(void *argument)
 	volatile uint16_t atmMultiplier = 1;
 	osStatus_t status;
 	//osStatus_t temp;
-	volatile LightScmState currScmState = Primary_G_WK_State;
+	volatile LightScmState currScmState = Fail_Safe;
 
+
+	//Initial state of primary and secondary traffic lights all off
 	 Primary_Red(LIGHT_OFF);
 	 Primary_Yellow(LIGHT_OFF);
 	 Primary_Green(LIGHT_OFF);
 	 Primary_Walk(LIGHT_OFF);
-
+	 __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 10001);
 	 Secondary_Red(LIGHT_OFF);
 	 Secondary_Yellow(LIGHT_OFF);
 	 Secondary_Green(LIGHT_OFF);
 	 Secondary_Walk(LIGHT_OFF);
-
-	//
+	 __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 10001);
+	//Starting PWM on blue LED for walk sign blinking
 	 HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_2);
 	 HAL_TIMEx_PWMN_Start(&htim1,TIM_CHANNEL_3);
 
 
-	//Send a status message straight away
-	statusMessage.code = CMD_SCM_CODE;
+	//Send a status message straight away of current state
+	statusMessage.code = CMD_FSM_CODE;
 	statusMessage.multiplier = 1;
 	statusMessage.LightState = currScmState;
 	if(osMessageQueuePut(Status_QueueHandle, &statusMessage, 1U, 0U)!= osOK)
@@ -515,12 +518,15 @@ void Traffic_Lights_Task(void *argument)
 
 		//check for messages but do not block.
 		status = osMessageQueueGet(CLI_QueueHandle, &cliMessage, NULL, 0U );
-		if(status == osOK)
+		if(status == osOK)  	//This means a message has been received
 		{
+			//Clear any previously pending flags
 			osEventFlagsClear(New_CMD_RxHandle,NEW_CMD_FLAG);
-			//This means a message has been received
-			if(cliMessage.code == CMD_FSM_CODE)
+
+			if(cliMessage.code == CMD_FSM_CODE)  //If recived fail safe mode command
 			{
+
+				//Turn all the traffic lights off excluding the red lights
 				Primary_Yellow(LIGHT_OFF);
 				Primary_Green(LIGHT_OFF);
 				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_2, 10001);
@@ -528,36 +534,47 @@ void Traffic_Lights_Task(void *argument)
 				Secondary_Green(LIGHT_OFF);
 				__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 10001);
 
+				//Set current state to fail safe
 				currScmState = Fail_Safe;
 				atmMultiplier = 1;
 			}
-			else if(cliMessage.code == CMD_ATM_CODE)
+			else if(cliMessage.code == CMD_ATM_CODE)	//If accelerated test mode cammand is recieved
 			{
+				//Change the current state to primary starting state
 				currScmState = Primary_G_WK_State;
-				atmMultiplier = cliMessage.multiplier;
+				atmMultiplier = cliMessage.multiplier;	//Set the multiplier
 
 			}
-			else if((cliMessage.code == CMD_SCM_CODE))
+			else if((cliMessage.code == CMD_SCM_CODE))	//If the static cyclic mode command is recived
 			{
+				//Set the current state to primary starting state
 				currScmState = Primary_G_WK_State;
 				atmMultiplier = 1;
 			}
 
+			//Update status message with latest information about mode and multiplier
 			statusMessage.code = cliMessage.code;
 			statusMessage.multiplier = atmMultiplier;
 
 		}
 
+		//Encode the current state in the statusMessage struct to send to display status task
 		statusMessage.LightState = currScmState;
 
-		if (osMessageQueueGetCount(Status_QueueHandle) < 2)
+		if (osMessageQueueGetCount(Status_QueueHandle) < 2)	//To ensure queue isn't full
 		{
+			//Send the status message via queue
 			if(osMessageQueuePut(Status_QueueHandle, &statusMessage, 1U, 0U) != osOK)
 			{
 				Error_Handler();
 			}
 		}
 
+		//Implementing state machine according to the timing diagram of traffic light transitions
+		//Based on the state, a state even handler is called which toggles LED's and sets PWM for walk sign..
+		//...LED to blink at 1Hz. Then it waits for a specified amount of time which is divided by the ATM
+		//...value entered by the user. While waiting it blocks the tasks so lower priority tasks can be..
+		//...executed. If a command is recieved during this time, then it immediatly returns using event communication.
 		switch (currScmState)
 		{
 		case Primary_G_WK_State :
@@ -621,7 +638,7 @@ void Traffic_Lights_Task(void *argument)
 			currScmState = Primary_G_WK_State;
 			break;
 
-		case Fail_Safe:
+		case Fail_Safe:   //Fail safe mode blinks LED at 0.5Hz with 75% duty cycle.
 
 			Primary_Red(LIGHT_ON);
 			Secondary_Red(LIGHT_ON);
@@ -722,14 +739,21 @@ void Status_CLI_Task(void *argument)
 
 	for(;;)
 	{
+		//Recive the status message from the queue
 		 status = osMessageQueueGet(Status_QueueHandle, &statusMessage, NULL, 0U );
 		 if(status == osOK)
 		 {
 			 displayMSG = statusMessage;
 		 }
+
+		 //convert multiplier value from int to str
 		itoa(displayMSG.multiplier, atmMultiplier, 10);
+
+		//Initialize the status window
 		printStringBlock(&huart3, Init_Region);
 
+
+		//Based on the mode user has selected, it outputs that info to display
 		switch (displayMSG.code)
 		{
 		case CMD_ATM_CODE :
@@ -748,6 +772,8 @@ void Status_CLI_Task(void *argument)
 
 		}
 
+		//Depending the current state of the traffic lights, it outputs coloured blocks indiacting
+		//.. the status of traffic light.
 		switch (displayMSG.LightState)
 		{
 			case Primary_G_WK_State:
@@ -783,7 +809,7 @@ void Status_CLI_Task(void *argument)
 			break;
 
 		}
-
+		//Restore the cursor.
 		printStringBlock(&huart3, RESTORE_CURSOR);
 		memset(atmMultiplier, '\0', sizeof(atmMultiplier));
 

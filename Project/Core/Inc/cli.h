@@ -53,13 +53,15 @@
 #define SET_REGION(X) "\x1b["#X";r"
 #define CLEAR_STATUS(X) "\x1b["#X";0H\x1b[0K\x1b[1J"
 
-
+//ANSI Escape SGR codes to display Background color
+//.. used to represent traffic light status.
 #define BG_RED "\x1b[48;2;255;0;0m R "
 #define BG_GREEN "\x1b[48;2;0;255;0m G "
 #define BG_YELLOW "\x1b[48;2;255;255;0m Y "
 #define BG_BLUE_W "\x1b[48;2;0;0;255m S "
 #define BG_BLUE "\x1b[48;2;0;0;255m W "
 
+//Darker color tones to indicate off status
 #define BG_NRED "\x1b[48;2;59;0;0m   "
 #define BG_NGREEN "\x1b[48;2;0;59;0m   "
 #define BG_NYELLOW "\x1b[48;2;48;48;0m   "

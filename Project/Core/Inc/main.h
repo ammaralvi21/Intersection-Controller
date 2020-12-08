@@ -41,12 +41,14 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-typedef struct {                                // object data type
+//Datatype used to transmit messages from Rx CLI Task to Traffic Light Task
+typedef struct {
   uint8_t code;
   uint8_t multiplier;
 } CMD_MSG_QUEUE_t;
 
-typedef struct {                                // object data type
+//Datatype used to transmit messages to the display status window task
+typedef struct {
   uint8_t code;
   uint8_t multiplier;
   LightScmState LightState;
