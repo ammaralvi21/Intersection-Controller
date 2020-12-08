@@ -41,7 +41,16 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+typedef struct {                                // object data type
+  uint8_t code;
+  uint8_t multiplier;
+} CMD_MSG_QUEUE_t;
 
+typedef struct {                                // object data type
+  uint8_t code;
+  uint8_t multiplier;
+  LightScmState LightState;
+} Status_MSG_QUEUE_t;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -61,7 +70,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void Execute_Cmd(UART_HandleTypeDef * huart, uint16_t * cliMessage);
+void Execute_Cmd(UART_HandleTypeDef * huart, CMD_MSG_QUEUE_t * cliMessage);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

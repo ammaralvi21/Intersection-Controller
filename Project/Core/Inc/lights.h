@@ -20,6 +20,7 @@ typedef enum
 	Secondary_G_WK_Sate,
 	Secondary_G_WW_Sate,
 	Secondary_Y_WW_Sate,
+	Fail_Safe,
 } LightScmState;
 
 

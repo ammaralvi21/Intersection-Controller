@@ -17,20 +17,31 @@
 #define CMD_FSM_STR ("mode fsm")
 #define CMD_SCM_STR ("mode scm")
 #define CMD_ATM_STR ("atm ")
+#define CMD_FSM_CODE ('f')
+#define CMD_SCM_CODE ('s')
+#define CMD_ATM_CODE ('a')
 #define CMD_HELP_STR ("help")
 #define MSG_FSM_STR ("!! Switched to Failsafe mode !!\r\n\r\n")
 #define MSG_SCM_STR ("!! Switched to Static Cycle mode !!\r\n\r\n")
 #define MSG_ATM_STR ("!! Accelerated test mode with multiplication factor: ")
 #define MSG_LED_STATE_OFF_STR ("!!! The LED state is OFF !!!\r\n\r\n")
 #define MSG_HELP_STR ( \
-		"HELP MENU:\r\n" \
-		"Commands           |    Description\r\n" \
-		"-------------------|------------------------\r\n" \
-		"'mode fsm'         |    \r\n" \
-		"'mode scm'         |    \r\n" \
-		"'atm [x]'          |    \r\n" \
-		"'help'             |    Show HELP menu\r\n\r\n")
+		"                                 HELP MENU:                              \r\n" \
+		"|===================|=====================================================|\r\n" \
+		"|{Commands}         |    {Description}                                    |\r\n" \
+		"|===================|=====================================================|\r\n" \
+		"|'mode fsm'         |    Switch to Failsafe mode                          |\r\n" \
+		"|-------------------|-----------------------------------------------------|\r\n" \
+		"|'mode scm'         |    Switch to Static Cycle mode                      |\r\n" \
+		"|-------------------|-----------------------------------------------------|\r\n" \
+		"|'atm [x]'          |    Enter Accelerated test mode with multiplication  |\r\n" \
+		"|                   |    factor x where x is between 1 and 100            |\r\n" \
+		"|-------------------|-----------------------------------------------------|\r\n" \
+		"|'help'             |    Show HELP menu                                   |\r\n" \
+        "|-------------------|-----------------------------------------------------|\r\n\r\n" )
 
+#define MSG_ATM_ERR_STR ("ERROR! ATM multiplier should be between 1 and 100\r\n" \
+						 "Please try again! Or Type 'help' for more info \r\n\r\n")
 #define MSG_CMD_ERR_STR ("ERROR! Invalid command: \"")
 #define MSG_ASK_HELP_STR ("\"\r\nType 'help' for more info\r\n\r\n")
 
