@@ -59,7 +59,8 @@ a walking state. When it transitions to Walk Warning state, it stays bright but 
 which to warn the person about to cross the road to stop.
  
  
-Explanation Video
+Explanation Video:
+
 https://urcourses-video.uregina.ca/p/104/sp/10400/serveFlavor/entryId/0_ifqxabsv/v/2/ev/7/flavorId/0_1meou7a4/forceproxy/true/name/a.mp4
  
 See below for a log of the CLI
