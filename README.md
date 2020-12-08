@@ -101,4 +101,5 @@ ItC-CLI > atm 5
 ItC-CLI >
 </pre?
 
-
+Explanation Video
+https://urcourses-video.uregina.ca/p/104/sp/10400/serveFlavor/entryId/0_ifqxabsv/v/2/ev/7/flavorId/0_1meou7a4/forceproxy/true/name/a.mp4
