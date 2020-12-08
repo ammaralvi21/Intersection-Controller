@@ -48,7 +48,9 @@ When the system starts up it enters FSM.
       factor *x*. 
 There is a status window at the top of the CLI that displays the current mode and status of 
 the traffic lights.See below.
- ![me](https://github.com/ammaralvi21/Intersection-Controller/blob/main/Docs/StatusWindow.PNG)
+
+![me](https://github.com/ammaralvi21/Intersection-Controller/blob/main/Docs/StatusWindow.PNG)
+
 As seen the from the status window, the traffic lights on the left are the primary and the ones on
 top and bottom are secondary. The color of the respective traffic light becomes brighter indicating that its
 active.
